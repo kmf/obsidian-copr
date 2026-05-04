@@ -1,0 +1,57 @@
+name: Check for new Obsidian release
+
+on:
+  schedule:
+    - cron: "0 8 * * *" # daily at 08:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get latest upstream version
+        id: upstream
+        run: |
+          LATEST=$(curl -s https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | jq -r .tag_name | sed 's/^v//')
+          echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+
+      - name: Get current spec version
+        id: current
+        run: |
+          CURRENT=$(grep '^Version:' obsidian.spec | awk '{print $2}')
+          echo "version=$CURRENT" >> "$GITHUB_OUTPUT"
+
+      - name: Update spec if new version available
+        if: steps.upstream.outputs.version != steps.current.outputs.version
+        env:
+          NEW_VERSION: ${{ steps.upstream.outputs.version }}
+          OLD_VERSION: ${{ steps.current.outputs.version }}
+        run: |
+          DATE=$(date +"%a %b %d %Y")
+          sed -i "s/^Version:.*/Version:        ${NEW_VERSION}/" obsidian.spec
+          sed -i "s/^Release:.*/Release:        1%{?dist}/" obsidian.spec
+          # Prepend changelog entry
+          sed -i "/^%changelog/a * ${DATE} github-actions <actions@github.com> - ${NEW_VERSION}-1\n- Update to ${NEW_VERSION}" obsidian.spec
+
+      - name: Open pull request
+        if: steps.upstream.outputs.version != steps.current.outputs.version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEW_VERSION: ${{ steps.upstream.outputs.version }}
+        run: |
+          BRANCH="release/v${NEW_VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add obsidian.spec
+          git commit -m "build(spec): update to Obsidian ${NEW_VERSION}"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --title "build(spec): update to Obsidian ${NEW_VERSION}" \
+            --body "Upstream released v${NEW_VERSION}. This PR bumps the spec file."
