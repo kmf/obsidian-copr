@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           obsidian
-Version:        1.13.4
+Version:        1.13.6
 Release:        1%{?dist}
 Summary:        A powerful knowledge base on top of a local folder of plain text Markdown files
 License:        Proprietary
@@ -56,6 +56,9 @@ install -Dm644 resources/icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/
 %{_datadir}/icons/hicolor/512x512/apps/obsidian.png
 
 %changelog
+* Tue Aug 11 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.6-1
+- Update to upstream Obsidian 1.13.6
+
 * Thu Jul 30 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.4-1
 - Update to upstream Obsidian 1.13.4
 
