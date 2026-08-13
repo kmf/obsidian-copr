@@ -48,10 +48,13 @@ jobs:
           BRANCH="release/v${NEW_VERSION}"
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout -b "$BRANCH"
+          git checkout -B "$BRANCH"
           git add obsidian.spec
           git commit -m "build(spec): update to Obsidian ${NEW_VERSION}"
-          git push -u origin "$BRANCH"
-          gh pr create \
+          git push -u --force origin "$BRANCH"
+
+          if ! gh pr create \
             --title "build(spec): update to Obsidian ${NEW_VERSION}" \
-            --body "Upstream released v${NEW_VERSION}. This PR bumps the spec file."
+            --body "Upstream released v${NEW_VERSION}. This PR bumps the spec file."; then
+            echo "::warning::Unable to create PR with GITHUB_TOKEN. Branch '$BRANCH' was pushed and can be opened manually."
+          fi
