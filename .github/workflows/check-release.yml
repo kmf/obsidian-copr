@@ -15,24 +15,35 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get latest upstream version with Linux tarball
+      - name: Get latest desktop version from changelog
         id: upstream
         run: |
-          # GitHub "latest" can be a mobile-only release (e.g. APK only).
-          # Use the newest release that publishes obsidian-<ver>.tar.gz.
-          LATEST=$(curl -sL 'https://api.github.com/repos/obsidianmd/obsidian-releases/releases?per_page=30' | jq -r '
-            [.[] as $r
-             | ($r.tag_name | ltrimstr("v")) as $v
-             | select($r.assets | map(.name) | index("obsidian-\($v).tar.gz"))
-             | $v
+          # Mobile and desktop share GitHub tags; only desktop publishes the
+          # Linux tarball. Changelog URLs encode the platform, e.g.
+          # https://obsidian.md/changelog/2026-08-12-desktop-v1.13.7/
+          LATEST=$(curl -sL 'https://obsidian.md/changelog.json' | jq -r '
+            [.items[]
+             | (.url // .id) as $u
+             | select($u | test("desktop-v"))
+             | select(.title | test("Public"))
+             | ($u | capture("desktop-v(?<v>[0-9.]+)") | .v)
             ] | first
           ')
           if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
-            echo "::error::No upstream release with obsidian-*.tar.gz found"
+            echo "::error::No public desktop release found in changelog.json"
             exit 1
           fi
+
+          # Sanity-check the GitHub Linux tarball exists before bumping.
+          ASSET="https://github.com/obsidianmd/obsidian-releases/releases/download/v${LATEST}/obsidian-${LATEST}.tar.gz"
+          CODE=$(curl -sI -o /dev/null -w '%{http_code}' -L "$ASSET")
+          if [ "$CODE" != "200" ]; then
+            echo "::error::Desktop v${LATEST} has no Linux tarball (HTTP ${CODE}): ${ASSET}"
+            exit 1
+          fi
+
           echo "version=$LATEST" >> "$GITHUB_OUTPUT"
-          echo "Selected upstream version: $LATEST"
+          echo "Selected desktop version: $LATEST"
 
       - name: Get current spec version
         id: current
@@ -61,7 +72,7 @@ jobs:
           set -euo pipefail
           BRANCH="release/v${NEW_VERSION}"
           TITLE="build(spec): update to Obsidian ${NEW_VERSION}"
-          BODY="Upstream released v${NEW_VERSION} with a Linux tarball. This PR bumps the spec file."
+          BODY="Upstream published desktop v${NEW_VERSION} (https://obsidian.md/changelog/). This PR bumps the spec file."
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
