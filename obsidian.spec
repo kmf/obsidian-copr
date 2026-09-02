@@ -2,7 +2,7 @@
 
 Name:           obsidian
 Version:        1.13.6
-Release:        1%{?dist}
+Release:        2%{?dist}
 Summary:        A powerful knowledge base on top of a local folder of plain text Markdown files
 License:        Proprietary
 URL:            https://obsidian.md
@@ -43,8 +43,8 @@ cp -a . %{buildroot}/opt/Obsidian/
 install -d %{buildroot}%{_bindir}
 ln -s /opt/Obsidian/obsidian %{buildroot}%{_bindir}/obsidian
 
-# Desktop entry
-install -Dm644 %{SOURCE1} %{buildroot}%{_datadir}/applications/obsidian.desktop
+# Desktop entry — basename must match Wayland app_id (md.obsidian.Obsidian)
+install -Dm644 %{SOURCE1} %{buildroot}%{_datadir}/applications/md.obsidian.Obsidian.desktop
 
 # Icon
 install -Dm644 resources/icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/obsidian.png
@@ -52,10 +52,13 @@ install -Dm644 resources/icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/
 %files
 /opt/Obsidian/
 %{_bindir}/obsidian
-%{_datadir}/applications/obsidian.desktop
+%{_datadir}/applications/md.obsidian.Obsidian.desktop
 %{_datadir}/icons/hicolor/512x512/apps/obsidian.png
 
 %changelog
+* Wed Sep 02 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.6-2
+- Fix GNOME Shell Wayland dock icon by matching desktop id to app_id
+
 * Tue Aug 11 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.6-1
 - Update to upstream Obsidian 1.13.6
 
