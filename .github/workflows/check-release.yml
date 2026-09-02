@@ -39,22 +39,36 @@ jobs:
           # Prepend changelog entry
           sed -i "/^%changelog/a * ${DATE} github-actions <actions@github.com> - ${NEW_VERSION}-1\n- Update to ${NEW_VERSION}" obsidian.spec
 
-      - name: Open pull request
+      - name: Open and merge pull request
         if: steps.upstream.outputs.version != steps.current.outputs.version
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NEW_VERSION: ${{ steps.upstream.outputs.version }}
         run: |
+          set -euo pipefail
           BRANCH="release/v${NEW_VERSION}"
+          TITLE="build(spec): update to Obsidian ${NEW_VERSION}"
+          BODY="Upstream released v${NEW_VERSION}. This PR bumps the spec file."
+
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B "$BRANCH"
           git add obsidian.spec
-          git commit -m "build(spec): update to Obsidian ${NEW_VERSION}"
+          git commit -m "$TITLE"
           git push -u --force origin "$BRANCH"
 
-          if ! gh pr create \
-            --title "build(spec): update to Obsidian ${NEW_VERSION}" \
-            --body "Upstream released v${NEW_VERSION}. This PR bumps the spec file."; then
-            echo "::warning::Unable to create PR with GITHUB_TOKEN. Branch '$BRANCH' was pushed and can be opened manually."
+          PR_URL=$(gh pr list --head "$BRANCH" --base main --state open --json url --jq '.[0].url // empty')
+          if [ -z "$PR_URL" ]; then
+            if ! PR_URL=$(gh pr create --title "$TITLE" --body "$BODY" --base main --head "$BRANCH"); then
+              echo "::warning::Unable to create PR; pushing release commit directly to main."
+              git checkout main
+              git pull --ff-only origin main
+              git merge --ff-only "$BRANCH"
+              git push origin main
+              git push origin --delete "$BRANCH" || true
+              exit 0
+            fi
           fi
+
+          echo "Merging $PR_URL"
+          gh pr merge "$PR_URL" --squash --delete-branch
