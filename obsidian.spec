@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           obsidian
-Version:        1.13.8
+Version:        1.13.7
 Release:        1%{?dist}
 Summary:        A powerful knowledge base on top of a local folder of plain text Markdown files
 License:        Proprietary
@@ -56,8 +56,8 @@ install -Dm644 resources/icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/
 %{_datadir}/icons/hicolor/512x512/apps/obsidian.png
 
 %changelog
-* Wed Sep 02 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.8-1
-- Update to upstream Obsidian 1.13.8
+* Wed Sep 02 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.7-1
+- Update to upstream Obsidian 1.13.7 (1.13.8 has no Linux tarball)
 
 * Wed Sep 02 2026 Karl Fischer <karl@obsidian.co.za> - 1.13.6-2
 - Fix GNOME Shell Wayland dock icon by matching desktop id to app_id

@@ -15,11 +15,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Get latest upstream version
+      - name: Get latest upstream version with Linux tarball
         id: upstream
         run: |
-          LATEST=$(curl -s https://api.github.com/repos/obsidianmd/obsidian-releases/releases/latest | jq -r .tag_name | sed 's/^v//')
+          # GitHub "latest" can be a mobile-only release (e.g. APK only).
+          # Use the newest release that publishes obsidian-<ver>.tar.gz.
+          LATEST=$(curl -sL 'https://api.github.com/repos/obsidianmd/obsidian-releases/releases?per_page=30' | jq -r '
+            [.[] as $r
+             | ($r.tag_name | ltrimstr("v")) as $v
+             | select($r.assets | map(.name) | index("obsidian-\($v).tar.gz"))
+             | $v
+            ] | first
+          ')
+          if [ -z "$LATEST" ] || [ "$LATEST" = "null" ]; then
+            echo "::error::No upstream release with obsidian-*.tar.gz found"
+            exit 1
+          fi
           echo "version=$LATEST" >> "$GITHUB_OUTPUT"
+          echo "Selected upstream version: $LATEST"
 
       - name: Get current spec version
         id: current
@@ -48,7 +61,7 @@ jobs:
           set -euo pipefail
           BRANCH="release/v${NEW_VERSION}"
           TITLE="build(spec): update to Obsidian ${NEW_VERSION}"
-          BODY="Upstream released v${NEW_VERSION}. This PR bumps the spec file."
+          BODY="Upstream released v${NEW_VERSION} with a Linux tarball. This PR bumps the spec file."
 
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
