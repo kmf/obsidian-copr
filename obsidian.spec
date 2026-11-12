@@ -1,7 +1,7 @@
 %global debug_package %{nil}
 
 Name:           obsidian
-Version:        1.15.0
+Version:        1.15.1
 Release:        1%{?dist}
 Summary:        A powerful knowledge base on top of a local folder of plain text Markdown files
 License:        Proprietary
@@ -56,6 +56,8 @@ install -Dm644 resources/icon.png %{buildroot}%{_datadir}/icons/hicolor/512x512/
 %{_datadir}/icons/hicolor/512x512/apps/obsidian.png
 
 %changelog
+* Thu Nov 12 2026 github-actions <actions@github.com> - 1.15.1-1
+- Update to 1.15.1
 * Mon Nov 02 2026 github-actions <actions@github.com> - 1.15.0-1
 - Update to 1.15.0
 * Fri Oct 23 2026 github-actions <actions@github.com> - 1.14.5-1
